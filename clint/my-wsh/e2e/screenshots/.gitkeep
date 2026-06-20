@@ -1,0 +1,2 @@
+# This file ensures the screenshots directory is created in version control
+# Screenshots from failed tests will be saved here

@@ -1,0 +1,341 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { BrowserRouter } from 'react-router-dom';
+import axios from 'axios';
+import Registration from '../registration';
+// Mock context providers
+jest.mock('../../context/ThemeLanguageContext', () => ({
+  ThemeLanguageProvider: ({ children }) => <div>{children}</div>,
+  useThemeLanguage: () => ({
+    language: 'en',
+    isDarkMode: false,
+    toggleTheme: jest.fn(),
+    toggleLanguage: jest.fn(),
+  }),
+}));
+
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios;
+
+// Mock useNavigate
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+}));
+
+// Mock ThemeLanguageToggles component
+jest.mock('../../components/ThemeLanguageToggles', () => {
+  return function MockThemeLanguageToggles() {
+    return <div data-testid="theme-language-toggles">Theme/Language Toggles</div>;
+  };
+});
+
+// Test wrapper component
+const TestWrapper = ({ children }) => (
+  <div>
+    {children}
+  </div>
+);
+
+describe('Registration', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders registration form correctly', () => {
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    expect(screen.getByText(/registration/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/phone number/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
+  });
+
+  it('validates username length', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    
+    // Test username too long
+    await user.type(usernameInput, 'thisisareallylongusernamethatexceedsthelimit');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/username maximum/i)).toBeInTheDocument();
+    });
+  });
+
+  it('validates email format', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const emailInput = screen.getByLabelText(/email/i);
+    
+    // Test invalid email
+    await user.type(emailInput, 'invalid-email');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/email valid/i)).toBeInTheDocument();
+    });
+  });
+
+  it('validates phone number format', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const phoneInput = screen.getByLabelText(/phone number/i);
+    
+    // Test invalid phone number
+    await user.type(phoneInput, '123456');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/invalid phone/i)).toBeInTheDocument();
+    });
+
+    // Test valid phone number
+    await user.clear(phoneInput);
+    await user.type(phoneInput, '97123456');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/valid phone/i)).toBeInTheDocument();
+    });
+  });
+
+  it('validates password requirements', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const passwordInput = screen.getByLabelText(/password/i);
+    
+    // Test password with no uppercase
+    await user.type(passwordInput, 'password123!');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/upper/i)).toBeInTheDocument();
+    });
+
+    // Test password with uppercase
+    await user.clear(passwordInput);
+    await user.type(passwordInput, 'Password123!');
+    
+    await waitFor(() => {
+      const upperCaseRequirement = screen.getByText(/upper/i);
+      expect(upperCaseRequirement).toHaveClass('valid');
+    });
+  });
+
+  it('validates password confirmation match', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const passwordInput = screen.getByLabelText(/password/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'DifferentPassword123!');
+    
+    await waitFor(() => {
+      expect(screen.getByText(/passwords no match/i)).toBeInTheDocument();
+    });
+  });
+
+  it('submits form with valid data', async () => {
+    const user = userEvent.setup();
+    const mockRegistrationResponse = {
+      data: {
+        success: true,
+        message: 'Registration successful',
+        user: { id: 1, email: 'test@example.com' }
+      }
+    };
+
+    mockedAxios.post.mockResolvedValueOnce(mockRegistrationResponse);
+
+    const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const phoneInput = screen.getByLabelText(/phone number/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const submitButton = screen.getByRole('button', { name: /register/i });
+
+    await user.type(usernameInput, 'testuser');
+    await user.type(emailInput, 'test@example.com');
+    await user.type(phoneInput, '97123456');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'Password123!');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:3001/userRegister',
+        {
+          userName: 'testuser',
+          email: 'test@example.com',
+          password: 'Password123!',
+          confirmPassword: 'Password123!',
+          phoneNumber: '97123456'
+        }
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalledWith(expect.stringMatching(/registration done/i));
+    });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+
+    mockAlert.mockRestore();
+  });
+
+  it('handles registration failure', async () => {
+    const user = userEvent.setup();
+    const mockErrorResponse = {
+      data: {
+        success: false,
+        message: 'Email already exists'
+      }
+    };
+
+    mockedAxios.post.mockResolvedValueOnce(mockErrorResponse);
+    const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const phoneInput = screen.getByLabelText(/phone number/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const submitButton = screen.getByRole('button', { name: /register/i });
+
+    await user.type(usernameInput, 'testuser');
+    await user.type(emailInput, 'existing@example.com');
+    await user.type(phoneInput, '97123456');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'Password123!');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalledWith('Email already exists');
+    });
+
+    mockAlert.mockRestore();
+  });
+
+  it('handles network error during registration', async () => {
+    const user = userEvent.setup();
+    mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
+
+    const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const phoneInput = screen.getByLabelText(/phone number/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const submitButton = screen.getByRole('button', { name: /register/i });
+
+    await user.type(usernameInput, 'testuser');
+    await user.type(emailInput, 'test@example.com');
+    await user.type(phoneInput, '97123456');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'Password123!');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalled();
+    });
+
+    mockAlert.mockRestore();
+  });
+
+  it('prevents submission with empty fields', async () => {
+    const user = userEvent.setup();
+    const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    const submitButton = screen.getByRole('button', { name: /register/i });
+    await user.click(submitButton);
+
+    expect(mockAlert).toHaveBeenCalledWith(expect.stringMatching(/fill all/i));
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+
+    mockAlert.mockRestore();
+  });
+
+  it('renders login link', () => {
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    expect(screen.getByText(/already account/i)).toBeInTheDocument();
+    expect(screen.getByText(/login here/i)).toBeInTheDocument();
+  });
+
+  it('renders theme and language toggles', () => {
+    render(
+      <TestWrapper>
+        <Registration />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId('theme-language-toggles')).toBeInTheDocument();
+  });
+});

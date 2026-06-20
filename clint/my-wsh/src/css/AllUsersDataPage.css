@@ -1,0 +1,169 @@
+/* All Users Data Page Styles */
+/* Font is inherited from .admin-home-page class */
+
+.error-message {
+  background: #ff6b6b;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+/* Tabs Container */
+.tabs-container {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+[data-theme='dark'] .tabs-container {
+  border-bottom-color: #444;
+}
+
+/* Tab Buttons */
+.tab-button {
+  padding: 10px 20px;
+  margin-right: 10px;
+  border: none;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+[data-theme='dark'] .tab-button {
+  color: #ccc;
+}
+
+.tab-button.active {
+  background: #339af0;
+  color: white;
+}
+
+[data-theme='dark'] .tab-button.active {
+  background: #4dabf7;
+  color: white;
+}
+
+.tab-button:hover:not(.active) {
+  background: rgba(51, 154, 240, 0.1);
+}
+
+[data-theme='dark'] .tab-button:hover:not(.active) {
+  background: rgba(77, 171, 247, 0.1);
+}
+
+.tab-icon {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Data Table Container */
+.data-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table Header */
+.data-table thead tr {
+  background: #f0f0f0;
+}
+
+[data-theme='dark'] .data-table thead tr {
+  background: #333;
+}
+
+.data-table th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .data-table th {
+  border-bottom-color: #555;
+}
+
+/* Table Body */
+.data-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+[data-theme='dark'] .data-table tbody tr {
+  border-bottom-color: #444;
+}
+
+.data-table td {
+  padding: 12px;
+}
+
+/* Empty State */
+.empty-state-cell {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+[data-theme='dark'] .empty-state-cell {
+  color: #ccc;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  display: inline-block;
+}
+
+.status-badge.active {
+  background: #51cf66;
+}
+
+.status-badge.expired {
+  background: #ff6b6b;
+}
+
+.status-badge.subscription-active {
+  background: #4dabf7;
+}
+
+.status-badge.completed {
+  background: #51cf66;
+}
+
+.status-badge.pending {
+  background: #ffd43b;
+}
+
+/* Delete Button */
+.delete-btn {
+  padding: 6px 12px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+  background: #ff5252;
+}
+
+.delete-btn:active {
+  background: #e63946;
+}
+

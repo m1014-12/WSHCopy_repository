@@ -1,0 +1,43 @@
+.container {
+    width: 90%;
+    max-width: 100%;
+    margin: auto;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+    position: relative;
+  }
+  
+  input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  input:focus {
+    outline: none;
+  }
+  
+  .form-group.valid input {
+    border-color: green;
+  }
+  
+  .form-group.error input {
+    border-color: red;
+  }
+  
+  .error-text {
+    color: red;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  
+  .tooltip-icon {
+    margin-left: 5px;
+    cursor: pointer;
+    color: #007BFF;
+    font-weight: bold;
+  }
+  

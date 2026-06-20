@@ -1,0 +1,402 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import axios from 'axios';
+
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios;
+
+// Mock react-router-dom
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+  Link: ({ children, to }) => <a href={to}>{children}</a>,
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+}));
+
+// Mock context providers
+jest.mock('../../context/ThemeLanguageContext', () => ({
+  useThemeLanguage: () => ({
+    language: 'en',
+    isDarkMode: false,
+    toggleTheme: jest.fn(),
+    toggleLanguage: jest.fn(),
+  }),
+}));
+
+jest.mock('../../context/AdminContext', () => ({
+  useAdmin: () => ({
+    login: jest.fn(),
+    logout: jest.fn(),
+    admin: null,
+  }),
+}));
+
+jest.mock('../../context/UserSessionContext', () => ({
+  useUserSession: () => ({
+    login: jest.fn(),
+    logout: jest.fn(),
+    user: null,
+  }),
+}));
+
+// Mock ThemeLanguageToggles component
+jest.mock('../../components/ThemeLanguageToggles', () => {
+  return function MockThemeLanguageToggles() {
+    return <div data-testid="theme-language-toggles">Theme/Language Toggles</div>;
+  };
+});
+
+jest.mock('../../translations/translations', () => ({
+  translations: {
+    en: {
+      welcome: 'Welcome',
+      login: 'Login',
+      email: 'Email',
+      password: 'Password',
+      forgotPassword: 'Forgot Password',
+      registerHere: 'Register Here',
+      getStarted: 'Get Started',
+      fillAllFields: 'Please fill in all fields',
+      loginFailed: 'Login failed',
+      loginFailedDetails: 'Login failed. Please try again.',
+      accessName: 'Access Name',
+      adminKey: 'Admin Key',
+      loginAsAdmin: 'Login as Admin',
+      noAccount: 'No account?',
+    },
+    ar: {
+      welcome: 'مرحبا',
+      login: 'تسجيل الدخول',
+      email: 'البريد الإلكتروني',
+      password: 'كلمة المرور',
+      forgotPassword: 'نسيت كلمة المرور',
+      registerHere: 'سجل هنا',
+      getStarted: 'ابدأ',
+      fillAllFields: 'يرجى ملء جميع الحقول',
+      loginFailed: 'فشل تسجيل الدخول',
+      loginFailedDetails: 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.',
+      accessName: 'اسم الوصول',
+      adminKey: 'مفتاح الإدارة',
+      loginAsAdmin: 'تسجيل الدخول كمدير',
+      noAccount: 'ليس لديك حساب؟',
+    },
+  },
+}));
+
+// Test wrapper component
+const TestWrapper = ({ children }) => (
+  <div>
+    {children}
+  </div>
+);
+
+describe('LoginPage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  describe('User Login', () => {
+    it('renders login form correctly', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/welcome/i)).toBeInTheDocument();
+      expect(screen.getByText(/login/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    });
+
+    it('displays validation error when fields are empty', async () => {
+      const user = userEvent.setup();
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      const loginButton = screen.getByRole('button', { name: /login/i });
+      await user.click(loginButton);
+
+      // Since the component uses alert, we need to mock it
+      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+      
+      expect(mockAlert).toHaveBeenCalled();
+      mockAlert.mockRestore();
+    });
+
+    it('submits form with valid credentials', async () => {
+      const user = userEvent.setup();
+      const mockLoginResponse = {
+        data: {
+          success: true,
+          user: { id: 1, email: 'test@example.com' },
+          token: 'mock-token'
+        }
+      };
+
+      mockedAxios.post.mockResolvedValueOnce(mockLoginResponse);
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const loginButton = screen.getByRole('button', { name: /login/i });
+
+      await user.type(emailInput, 'test@example.com');
+      await user.type(passwordInput, 'password123');
+      await user.click(loginButton);
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          'http://localhost:3001/login',
+          {
+            email: 'test@example.com',
+            password: 'password123'
+          }
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/home');
+      });
+    });
+
+    it('handles login failure', async () => {
+      const user = userEvent.setup();
+      const mockErrorResponse = {
+        data: {
+          success: false,
+          message: 'Invalid credentials'
+        }
+      };
+
+      mockedAxios.post.mockResolvedValueOnce(mockErrorResponse);
+
+      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const loginButton = screen.getByRole('button', { name: /login/i });
+
+      await user.type(emailInput, 'test@example.com');
+      await user.type(passwordInput, 'wrongpassword');
+      await user.click(loginButton);
+
+      await waitFor(() => {
+        expect(mockAlert).toHaveBeenCalledWith('Invalid credentials');
+      });
+
+      mockAlert.mockRestore();
+    });
+
+    it('handles network error', async () => {
+      const user = userEvent.setup();
+      mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
+
+      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const loginButton = screen.getByRole('button', { name: /login/i });
+
+      await user.type(emailInput, 'test@example.com');
+      await user.type(passwordInput, 'password123');
+      await user.click(loginButton);
+
+      await waitFor(() => {
+        expect(mockAlert).toHaveBeenCalled();
+      });
+
+      mockAlert.mockRestore();
+    });
+  });
+
+  describe('Admin Login', () => {
+    it('switches to admin mode with secret key combination', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Trigger Ctrl+Shift+Q
+      fireEvent.keyDown(document, {
+        key: 'Q',
+        ctrlKey: true,
+        shiftKey: true
+      });
+
+      expect(mockAlert).toHaveBeenCalledWith('Admin Mode Activated');
+      expect(screen.getByText(/admin login/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/access name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/admin key/i)).toBeInTheDocument();
+
+      mockAlert.mockRestore();
+    });
+
+    it('submits admin login form with valid credentials', async () => {
+      const user = userEvent.setup();
+      const mockAdminResponse = {
+        data: {
+          success: true,
+          adminId: 1,
+          accessName: 'admin',
+          email: 'admin@example.com',
+          token: 'admin-token'
+        }
+      };
+
+      mockedAxios.post.mockResolvedValueOnce(mockAdminResponse);
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      // Switch to admin mode
+      fireEvent.keyDown(document, {
+        key: 'Q',
+        ctrlKey: true,
+        shiftKey: true
+      });
+
+      const accessNameInput = screen.getByLabelText(/access name/i);
+      const adminPasswordInput = screen.getByLabelText(/password/i);
+      const adminKeyInput = screen.getByLabelText(/admin key/i);
+      const adminLoginButton = screen.getByRole('button', { name: /login as admin/i });
+
+      await user.type(accessNameInput, 'admin');
+      await user.type(adminPasswordInput, 'adminpass');
+      await user.type(adminKeyInput, 'adminkey');
+      await user.click(adminLoginButton);
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          'http://localhost:3001/adminLogin',
+          {
+            accessName: 'admin',
+            password: 'adminpass',
+            adminKey: 'adminkey'
+          }
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/admin-home');
+      });
+    });
+
+    it('handles admin login failure', async () => {
+      const user = userEvent.setup();
+      const mockErrorResponse = {
+        data: {
+          success: false,
+          message: 'Invalid admin credentials'
+        }
+      };
+
+      mockedAxios.post.mockResolvedValueOnce(mockErrorResponse);
+      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      // Switch to admin mode
+      fireEvent.keyDown(document, {
+        key: 'Q',
+        ctrlKey: true,
+        shiftKey: true
+      });
+
+      const accessNameInput = screen.getByLabelText(/access name/i);
+      const adminPasswordInput = screen.getByLabelText(/password/i);
+      const adminKeyInput = screen.getByLabelText(/admin key/i);
+      const adminLoginButton = screen.getByRole('button', { name: /login as admin/i });
+
+      await user.type(accessNameInput, 'wrongadmin');
+      await user.type(adminPasswordInput, 'wrongpass');
+      await user.type(adminKeyInput, 'wrongkey');
+      await user.click(adminLoginButton);
+
+      await waitFor(() => {
+        expect(mockAlert).toHaveBeenCalledWith('Invalid admin credentials');
+      });
+
+      mockAlert.mockRestore();
+    });
+  });
+
+  describe('Navigation Links', () => {
+    it('renders forgot password link', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
+    });
+
+    it('renders registration link', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/register here/i)).toBeInTheDocument();
+    });
+
+    it('renders get started link', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/get started/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Theme and Language', () => {
+    it('renders theme and language toggles', () => {
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByTestId('theme-language-toggles')).toBeInTheDocument();
+    });
+  });
+});

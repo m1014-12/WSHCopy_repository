@@ -1,0 +1,185 @@
+/* Root container for Get Started page */
+.get-started-root {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: #222;
+  display: flex;
+  flex-direction: column;
+  font-family: sans-serif;
+  transition: background 0.3s, color 0.3s;
+  position: relative;
+}
+
+.get-started-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.get-started-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.get-started-root.dark-theme {
+  background: #121212;
+  /*
+   linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  
+  */
+  color: #eee;
+}
+
+.get-started-root.dark-theme::before {
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.04) 0%, transparent 50%);
+}
+.get-started-root.ar-lang {
+  direction: rtl;
+}
+.get-started-root.en-lang {
+  direction: ltr;
+}
+
+.get-started-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px 16px 40px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.3s, color 0.3s;
+}
+.get-started-root.dark-theme .get-started-header {
+  background: #232323;
+  color: #eee;
+}
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+.wsh-logo {
+  height: 100px;
+  width: auto;
+}
+.get-started-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 8px;
+  font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  transition: color 0.3s;
+}
+.icon-btn:focus {
+  outline: 2px solid #007bff;
+}
+.lang-btn {
+  background: #eee;
+  color: #333;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 18px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.get-started-root.dark-theme .lang-btn {
+  background: #444;
+  color: #eee;
+}
+.hero {
+  padding: 32px 40px 16px 40px;
+  text-align: left;
+}
+.hero h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  color: inherit;
+}
+.hero p {
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 20px;
+}
+.get-started-root.dark-theme .hero p {
+  color: #ccc;
+}
+.get-started-btn {
+  background: #007bff;
+  color: #fff;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s, color 0.3s;
+}
+.get-started-btn:hover {
+  background: #0056b3;
+}
+.get-started-root.dark-theme .get-started-btn {
+  background: #66aaff;
+  color: #222;
+}
+.features {
+  margin: 0 40px 40px 40px;
+  max-width: 100%;
+  width: 100%;
+  align-self: flex-start;
+  text-align: left;
+}
+.features h2 {
+  font-size: 1.3em;
+  margin-bottom: 18px;
+}
+.features ul {
+  margin: 0 0 18px 0;
+  padding-left: 20px;
+}
+.features li {
+  margin-bottom: 10px;
+  font-size: 1.08em;
+}
+.features .description {
+  color: #666;
+  font-size: 1em;
+}
+.get-started-root.dark-theme .features .description {
+  color: #bbb;
+}
+/* RTL support for Arabic */
+.get-started-root.ar-lang .features,
+.get-started-root.ar-lang .hero {
+  text-align: right;
+}
+/* Responsive */
+@media (max-width: 700px) {
+  .get-started-header, .hero, .features {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .features {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
