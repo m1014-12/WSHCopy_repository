@@ -1346,7 +1346,7 @@ export const ar = {
   no: "لا",
   ok: "موافق",
   error: "خطأ",
-  success: "نجح",
+  success: "نجاح",
   warning: "تحذير",
   info: "معلومات"
 };
